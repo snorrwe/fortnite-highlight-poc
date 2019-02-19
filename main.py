@@ -2,6 +2,9 @@ import sys
 import cv2
 import numpy
 
+TEMPLATE = cv2.imread("kill.jpg")
+TEMPLATE = cv2.cvtColor(TEMPLATE, cv2.COLOR_BGR2GRAY)
+
 
 def has_kill_info(frame):
     """
@@ -11,9 +14,6 @@ def has_kill_info(frame):
     assert frame is not None
     assert frame.shape == (
         1080, 1920, 3), f"Shape should be (1080, 1920, 3), got {frame.shape}"
-
-    template = cv2.imread("kill.jpg")
-    template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
 
     roi = frame
     roi = frame[numpy.ix_([int(720 + i) for i in range(150)],
@@ -25,7 +25,7 @@ def has_kill_info(frame):
         cv2.getStructuringElement(cv2.MORPH_RECT, (13, 17)),
     )
 
-    res = cv2.matchTemplate(roi, template, cv2.TM_CCOEFF_NORMED)
+    res = cv2.matchTemplate(roi, TEMPLATE, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
     threshold = 0.7
     loc = numpy.where(res >= threshold)
@@ -43,8 +43,10 @@ def main():
     video = cv2.VideoCapture(video_path)
     assert video.isOpened(), f"[{video_path}] could not be opened!"
 
-    success, frame = video.read()
+    fps = video.get(cv2.CAP_PROP_FPS)
     kills = []
+
+    success, frame = video.read()
     while success:
         timestamp = video.get(cv2.CAP_PROP_POS_MSEC)
         timestamp = int(timestamp)
@@ -59,8 +61,8 @@ def main():
             success, frame = video.read()
 
     result = cv2.VideoWriter('highlight.avi',
-                             cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 15,
-                             (1920, 1080))
+                             cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
+                             fps // 2, (1920, 1080))
 
     print("Kill times: ", kills)
     if not kills:
@@ -80,7 +82,7 @@ def main():
         success, frame = video.read()
         timestamp = video.get(cv2.CAP_PROP_POS_MSEC)
 
-        while success and timestamp < kill + 6000:
+        while success and timestamp < kill + offset_ms * 2:
             result.write(frame)
             success, frame = video.read()
             timestamp = video.get(cv2.CAP_PROP_POS_MSEC)
