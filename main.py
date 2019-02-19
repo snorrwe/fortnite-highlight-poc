@@ -33,8 +33,13 @@ def has_kill_info(frame):
 
 
 def main():
-    video_path = "2019-02-19_14-57-39.mp4"
-    #  video_path = sys.argv[1]
+    """
+    Script input: path to your gameplay video
+    Outputs a "highlights.avi" file as result
+    """
+
+    video_path = sys.argv[1]
+
     video = cv2.VideoCapture(video_path)
     assert video.isOpened(), f"[{video_path}] could not be opened!"
 
