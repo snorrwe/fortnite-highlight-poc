@@ -5,6 +5,11 @@ import numpy
 TEMPLATE = cv2.imread("kill.jpg")
 TEMPLATE = cv2.cvtColor(TEMPLATE, cv2.COLOR_BGR2GRAY)
 
+TEMPLATE_MATCH_THRESHOLD = 0.7
+
+HIGHLIGHT_OFFSET_MS = 3000
+KILL_TEXT_ON_UI_DURATION_MS = 5000
+
 
 def has_kill_info(frame):
     """
@@ -15,7 +20,6 @@ def has_kill_info(frame):
     assert frame.shape == (
         1080, 1920, 3), f"Shape should be (1080, 1920, 3), got {frame.shape}"
 
-    roi = frame
     roi = frame[numpy.ix_([int(720 + i) for i in range(150)],
                           [int(780 + i) for i in range(350)])]
     roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -26,9 +30,7 @@ def has_kill_info(frame):
     )
 
     res = cv2.matchTemplate(roi, TEMPLATE, cv2.TM_CCOEFF_NORMED)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-    threshold = 0.7
-    loc = numpy.where(res >= threshold)
+    loc = numpy.where(res >= TEMPLATE_MATCH_THRESHOLD)
     return len(loc[0]) > 0
 
 
@@ -68,21 +70,21 @@ def main():
     if not kills:
         return
 
-    offset_ms = 3000
     last = 0
     video = cv2.VideoCapture(video_path)
-    for kill in kills[1:]:
-        if kill - last < 5000:
+    for kill in kills:
+        if kill - last < KILL_TEXT_ON_UI_DURATION_MS:
             continue
         last = kill
-        kill -= offset_ms
+
+        kill = max(kill - HIGHLIGHT_OFFSET_MS, 0)
 
         video.set(cv2.CAP_PROP_POS_MSEC, kill)
 
         success, frame = video.read()
         timestamp = video.get(cv2.CAP_PROP_POS_MSEC)
 
-        while success and timestamp < kill + offset_ms * 2:
+        while success and timestamp < kill + HIGHLIGHT_OFFSET_MS * 2:
             result.write(frame)
             success, frame = video.read()
             timestamp = video.get(cv2.CAP_PROP_POS_MSEC)
