@@ -2,8 +2,7 @@ import sys
 import cv2
 import numpy
 
-TEMPLATE = cv2.imread("kill.jpg")
-TEMPLATE = cv2.cvtColor(TEMPLATE, cv2.COLOR_BGR2GRAY)
+TEMPLATE = cv2.imread("kill.jpg", 0)
 
 TEMPLATE_MATCH_THRESHOLD = 0.7
 
